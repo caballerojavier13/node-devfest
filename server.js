@@ -1,3 +1,7 @@
+/**
+ * Created by dijkstra on 06/11/13.
+ */
+ 
 // llamamos todas las dependecias necesarias
 var sys = require("sys"),my_http = require("http"),
     path = require("path"),url = require("url"),
@@ -48,18 +52,24 @@ my_http.createServer(function(request,response){
     });
 }).listen(8080);
 sys.puts("Server Running on 8080");
-
-var chats = [];
 var users = [];
 io.on('connection',function(socket){
+    console.log(io.sockets);
+    //confirmamos que se conectó
+    socket.emit('connected');
+    //esperamos el nombre
+    socket.once('setName',function(name){
+        users[socket.id] = name;
+        socket.broadcast.emit('newUser',name);
+    })
     //cuando envíe un chat
     socket.on('newChat',function(text){
-        users[socket.id] = text.username;
-        var new_chat = {username:text.username,text:text.text}
-        chats.push(new_chat);
+        var new_chat = {username:text.username,text:text.text};
         io.sockets.emit('new_chat',new_chat);
     });
+    //cuando alguien se desconecta, avisamos a todos los conectados
     socket.on('disconnect',function(){
         io.sockets.emit('user_disconnected',users[socket.id]);
+        delete users[socket.id];
     })
 })
